@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Все посты</h1>
+<a class="btn btn-primary mb-3" href="{% url 'post_create' %}">Добавить пост</a>
+<ul class="list-group">
+    {% for post in posts %}
+    <li class="list-group-item">
+        <a href="{% url 'post_detail' post.id %}">{{ post.title }}</a>
+        <small>Автор: {{ post.author.username }} | {{ post.created_at }}</small>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
