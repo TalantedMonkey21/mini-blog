@@ -20,6 +20,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+    - name: Change directory
+      run: |
+        cd blog_project
     - name: Run migrations
       run: |
         python manage.py migrate
