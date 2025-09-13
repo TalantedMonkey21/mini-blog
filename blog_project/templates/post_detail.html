@@ -1,9 +1,16 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
 {% block content %}
-<h1>{{ post.title }}</h1>
-<p>{{ post.content }}</p>
-<p>Автор: {{ post.author.username }} | {{ post.created_at }}</p>
-<a class="btn btn-secondary" href="{% url 'post_edit' post.id %}">Редактировать</a>
-<a class="btn btn-danger" href="{% url 'post_delete' post.id %}">Удалить</a>
-<a class="btn btn-primary" href="{% url 'post_list' %}">Назад</a>
+  <h1>{{ post.title }}</h1>
+  <p>{{ post.content }}</p>
+  <p><small>Автор: {{ post.author.username }}</small></p>
+
+  {% if user.is_authenticated and user == post.author %}
+    <a href="{% url 'post_edit' post.pk %}" class="btn btn-warning">Редактировать</a>
+
+    <form method="post" action="{% url 'post_delete' post.pk %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Удалить</button>
+    </form>
+  {% endif %}
 {% endblock %}
