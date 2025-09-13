@@ -39,6 +39,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run migrations
+      working-directory: ${{ github.workspace }}/blog_project
       env:
         DATABASE_URL: postgres://testuser:testpass@localhost:5432/test_db
       run: python manage.py migrate
