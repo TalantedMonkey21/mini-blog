@@ -20,12 +20,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Change directory
-      run: |
-        cd blog_project
     - name: Run migrations
-      run: |
-        python manage.py migrate
+      working-directory: ${{ github.workspace }}/blog_project
+      run: python manage.py migrate
     - name: Run tests
       run: |
         python manage.py test
