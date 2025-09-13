@@ -50,6 +50,7 @@ jobs:
       run: python manage.py migrate
 
     - name: Run tests
+      working-directory: ${{ github.workspace }}/blog_project
       env:
         POSTGRES_USER: testuser
         POSTGRES_PASSWORD: testpass
