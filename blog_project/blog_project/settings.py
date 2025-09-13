@@ -24,6 +24,17 @@ if os.environ.get("GITHUB_ACTIONS") == "true":
             "PORT": os.environ["POSTGRES_PORT"],
         }
     }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'blog_db',
+            'USER': 'postgres',
+            'PASSWORD': '13R4110v3',
+            'HOST': 'localhost',
+            'PORT': '5432',
+        }
+    }
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -87,16 +98,6 @@ WSGI_APPLICATION = 'blog_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'blog_db',
-        'USER': 'postgres',
-        'PASSWORD': '13R4110v3',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
 
 
 # Password validation
