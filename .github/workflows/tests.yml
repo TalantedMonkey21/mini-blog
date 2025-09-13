@@ -14,9 +14,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: test_db
+          POSTGRES_USER: testuser       # имя пользователя
+          POSTGRES_PASSWORD: testpass   # пароль
+          POSTGRES_DB: test_db          # имя базы
         ports:
           - 5432:5432
         options: >-
@@ -41,10 +41,20 @@ jobs:
     - name: Run migrations
       working-directory: ${{ github.workspace }}/blog_project
       env:
+        POSTGRES_USER: testuser
+        POSTGRES_PASSWORD: testpass
+        POSTGRES_DB: test_db
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
         DATABASE_URL: postgres://testuser:testpass@localhost:5432/test_db
       run: python manage.py migrate
 
     - name: Run tests
       env:
+        POSTGRES_USER: testuser
+        POSTGRES_PASSWORD: testpass
+        POSTGRES_DB: test_db
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
         DATABASE_URL: postgres://testuser:testpass@localhost:5432/test_db
       run: python manage.py test
