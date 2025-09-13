@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from .models import Post
 from rest_framework.test import APITestCase
@@ -37,3 +37,48 @@ class PostModelTest(TestCase):
         self.assertEqual(self.post.title, 'Test Post')
         self.assertEqual(self.post.content, 'Content for test post')
         self.assertEqual(self.post.author.username, 'testuser')
+
+class BlogFrontendTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="maksim", password="12345")
+        self.post = Post.objects.create(
+            title="Тестовый пост",
+            content="Текст поста",
+            author=self.user,
+        )
+
+    def test_post_list_page(self):
+        response = self.client.get(reverse("post_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Тестовый пост")
+
+    def test_post_detail_page(self):
+        response = self.client.get(reverse("post_detail", args=[self.post.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Текст поста")
+
+    def test_create_post_requires_login(self):
+        response = self.client.get(reverse("post_create"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_logged_in_user_can_create_post(self):
+        self.client.login(username="maksim", password="12345")
+        response = self.client.post(reverse("post_create"), {
+            "title": "Новый пост",
+            "content": "Новый текст",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Post.objects.filter(title="Новый пост").exists())
+
+    def test_only_author_can_see_edit_delete_buttons(self):
+        self.client.login(username="maksim", password="12345")
+        response = self.client.get(reverse("post_detail", args=[self.post.pk]))
+        self.assertContains(response, "Редактировать")
+        self.assertContains(response, "Удалить")
+
+        other_user = User.objects.create_user(username="other", password="12345")
+        self.client.login(username="other", password="12345")
+        response = self.client.get(reverse("post_detail", args=[self.post.pk]))
+        self.assertNotContains(response, "Редактировать")
+        self.assertNotContains(response, "Удалить")
