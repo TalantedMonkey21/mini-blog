@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: cr.yandex/${REGISTRY_ID}/mini-blog:v1
+    build: .
     env_file: .env
     depends_on: [db]
     ports:
