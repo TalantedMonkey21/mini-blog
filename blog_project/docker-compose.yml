@@ -16,8 +16,6 @@ services:
     depends_on: [db]
     ports:
       - "80:8000"
-    volumes:
-      - static_volume:/app/staticfiles
     restart: unless-stopped
 
 volumes:
