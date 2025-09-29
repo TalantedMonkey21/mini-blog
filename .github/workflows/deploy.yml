@@ -18,17 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check secret presence
+      - name: Check secrets presence
         run: |
-          if [ -z "${{ secrets.YC_SA_KEY_JSON_B64 }}" ]; then
-            echo "❌ Secret YC_SA_KEY_JSON_B64 is empty or missing"; exit 1
-          fi
+          [ -n "${{ secrets.YC_SA_KEY_JSON_B64 }}" ] || { echo "YC_SA_KEY_JSON_B64 is empty"; exit 1; }
+          [ -n "${{ secrets.KUBECONFIG_BASE64 }}" ] || { echo "KUBECONFIG_BASE64 is empty"; exit 1; }
 
       - name: Restore SA key from base64
         run: |
           echo "${{ secrets.YC_SA_KEY_JSON_B64 }}" | base64 -d > sa-key.json
-          jq -e . sa-key.json >/dev/null 2>&1 || { echo "❌ sa-key.json invalid JSON"; exit 1; }
-          echo "✅ SA key OK"
+          jq -e . sa-key.json >/dev/null 2>&1 || { echo "sa-key.json invalid JSON"; exit 1; }
 
       - name: Get IAM token (via API)
         id: iam
@@ -37,7 +35,7 @@ jobs:
             -H 'Content-Type: application/json' \
             -d @sa-key.json | jq -r '.iamToken')
           if [ -z "$IAM_TOKEN" ] || [ "$IAM_TOKEN" = "null" ]; then
-            echo "❌ Failed to obtain IAM token"; exit 1
+            echo "Failed to obtain IAM token"; exit 1
           fi
           echo "IAM_TOKEN=${IAM_TOKEN}" >> $GITHUB_OUTPUT
 
@@ -51,6 +49,9 @@ jobs:
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
+          # (опционально) тег latest:
+          # docker tag "$IMAGE" "cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:latest"
+          # docker push "cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:latest"
 
       - name: Configure kubectl
         run: |
@@ -62,4 +63,4 @@ jobs:
       - name: Set image & rollout
         run: |
           kubectl -n "${{ env.NAMESPACE }}" set image deploy/${{ env.DEPLOYMENT }} ${{ env.DEPLOYMENT }}="${IMAGE}"
-          kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}
+          kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}"
