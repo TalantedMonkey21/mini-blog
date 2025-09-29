@@ -5,10 +5,10 @@ on:
     branches: ["main"]
 
 env:
-  REGISTRY_ID: crpagrrnlkadtf6n9au1            
-  IMAGE_NAME: mini-blog                        
-  NAMESPACE: mini-blog                        
-  DEPLOYMENT: mini-blog                        
+  REGISTRY_ID: crpagrrnlkadtf6n9au1
+  IMAGE_NAME: mini-blog
+  NAMESPACE: mini-blog
+  DEPLOYMENT: mini-blog
 
 jobs:
   build-and-deploy:
@@ -18,20 +18,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check secret presence
+        run: |
+          if [ -z "${{ secrets.YC_SA_KEY_JSON_B64 }}" ]; then
+            echo "❌ Secret YC_SA_KEY_JSON_B64 is empty or missing"; exit 1
+          fi
+
+      - name: Restore SA key from base64
+        run: |
+          echo "${{ secrets.YC_SA_KEY_JSON_B64 }}" | base64 -d > sa-key.json
+          jq -e . sa-key.json >/dev/null 2>&1 || { echo "❌ sa-key.json invalid JSON"; exit 1; }
+          echo "✅ SA key OK"
+
       - name: Get IAM token (via API)
         id: iam
         run: |
-          # сохраняем ключ аккуратно (как есть)
-          printf '%s' "${{ secrets.YC_SA_KEY_JSON }}" > sa-key.json
-          # запрашиваем IAM токен у Yandex API
           IAM_TOKEN=$(curl -s https://iam.api.cloud.yandex.net/iam/v1/tokens \
             -H 'Content-Type: application/json' \
-            -d @sa-key.json | python - <<'PY'
-          import sys,json
-          data=json.load(sys.stdin)
-          print(data["iamToken"])
-          PY
-                    )
+            -d @sa-key.json | jq -r '.iamToken')
+          if [ -z "$IAM_TOKEN" ] || [ "$IAM_TOKEN" = "null" ]; then
+            echo "❌ Failed to obtain IAM token"; exit 1
+          fi
           echo "IAM_TOKEN=${IAM_TOKEN}" >> $GITHUB_OUTPUT
 
       - name: Docker login to Yandex CR
