@@ -4,29 +4,34 @@ on:
   push:
     branches: ["main"]
 
+env:
+  REGISTRY_ID: crpagrrnlkadtf6n9au1            
+  IMAGE_NAME: mini-blog                        
+  NAMESPACE: mini-blog                        
+  DEPLOYMENT: mini-blog                        
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
-    env:
-      REGISTRY_ID: ${{ secrets.REGISTRY_ID || 'crpagrrnlkadtf6n9au1' }}
-      IMAGE_NAME: mini-blog
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install yc CLI
-        run: |
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          echo "${HOME}/yandex-cloud/bin" >> $GITHUB_PATH
-
-      - name: Get IAM token from SA key
+      - name: Get IAM token (via API)
         id: iam
         run: |
-          echo '${{ secrets.YC_SA_KEY_JSON }}' > sa-key.json
-          yc config set service-account-key sa-key.json
-          IAM_TOKEN=$(yc iam create-token)
+          # сохраняем ключ аккуратно (как есть)
+          printf '%s' "${{ secrets.YC_SA_KEY_JSON }}" > sa-key.json
+          # запрашиваем IAM токен у Yandex API
+          IAM_TOKEN=$(curl -s https://iam.api.cloud.yandex.net/iam/v1/tokens \
+            -H 'Content-Type: application/json' \
+            -d @sa-key.json | python - <<'PY'
+          import sys,json
+          data=json.load(sys.stdin)
+          print(data["iamToken"])
+          PY
+                    )
           echo "IAM_TOKEN=${IAM_TOKEN}" >> $GITHUB_OUTPUT
 
       - name: Docker login to Yandex CR
@@ -44,8 +49,10 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
+          kubectl version --client
+          kubectl cluster-info
 
-      - name: Set image in Deployment and rollout
+      - name: Set image & rollout
         run: |
-          kubectl -n mini-blog set image deploy/mini-blog mini-blog="${IMAGE}"
-          kubectl -n mini-blog rollout status deploy/mini-blog
+          kubectl -n "${{ env.NAMESPACE }}" set image deploy/${{ env.DEPLOYMENT }} ${{ env.DEPLOYMENT }}="${IMAGE}"
+          kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}
