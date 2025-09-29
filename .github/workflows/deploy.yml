@@ -1,0 +1,50 @@
+name: Build & Deploy to K8s
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      REGISTRY_ID: ${{ secrets.REGISTRY_ID || 'crpagrrnlkadtf6n9au1' }}
+      IMAGE_NAME: mini-blog
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yc CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          echo "${HOME}/yandex-cloud/bin" >> $GITHUB_PATH
+
+      - name: Get IAM token from SA key
+        id: iam
+        run: |
+          echo '${{ secrets.YC_SA_KEY_JSON }}' > sa-key.json
+          IAM_TOKEN=$(yc iam create-token --sa-key-file sa-key.json)
+          echo "IAM_TOKEN=${IAM_TOKEN}" >> $GITHUB_OUTPUT
+
+      - name: Docker login to Yandex CR
+        run: |
+          echo "${{ steps.iam.outputs.IAM_TOKEN }}" | docker login cr.yandex -u iam --password-stdin
+
+      - name: Build & Push image
+        run: |
+          IMAGE="cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
+
+      - name: Set image in Deployment and rollout
+        run: |
+          kubectl -n mini-blog set image deploy/mini-blog mini-blog="${IMAGE}"
+          kubectl -n mini-blog rollout status deploy/mini-blog
