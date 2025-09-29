@@ -25,7 +25,8 @@ jobs:
         id: iam
         run: |
           echo '${{ secrets.YC_SA_KEY_JSON }}' > sa-key.json
-          IAM_TOKEN=$(yc iam create-token --sa-key-file sa-key.json)
+          yc config set service-account-key sa-key.json
+          IAM_TOKEN=$(yc iam create-token)
           echo "IAM_TOKEN=${IAM_TOKEN}" >> $GITHUB_OUTPUT
 
       - name: Docker login to Yandex CR
