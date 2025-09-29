@@ -28,15 +28,17 @@ jobs:
           echo "${{ secrets.YC_SA_KEY_JSON_B64 }}" | base64 -d > sa-key.json
           jq -e . sa-key.json >/dev/null 2>&1 || { echo "sa-key.json invalid JSON"; exit 1; }
 
-      - name: Get IAM token (via API)
+      - name: Install yc CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          echo "${HOME}/yandex-cloud/bin" >> $GITHUB_PATH
+
+      - name: Auth with SA key and get IAM token
         id: iam
         run: |
-          IAM_TOKEN=$(curl -s https://iam.api.cloud.yandex.net/iam/v1/tokens \
-            -H 'Content-Type: application/json' \
-            -d @sa-key.json | jq -r '.iamToken')
-          if [ -z "$IAM_TOKEN" ] || [ "$IAM_TOKEN" = "null" ]; then
-            echo "Failed to obtain IAM token"; exit 1
-          fi
+          printf '%s' "${{ secrets.YC_SA_KEY_JSON }}" > sa-key.json
+          yc config set service-account-key sa-key.json
+          IAM_TOKEN=$(yc iam create-token)
           echo "IAM_TOKEN=${IAM_TOKEN}" >> $GITHUB_OUTPUT
 
       - name: Docker login to Yandex CR
