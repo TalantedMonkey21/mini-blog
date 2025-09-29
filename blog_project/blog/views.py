@@ -4,13 +4,15 @@ from .serializers import PostSerializer
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all().order_by('-created_at')
     serializer_class = PostSerializer
 
+def healthz(request):
+    return HttpResponse("ok")
 
 def register(request):
     if request.method == "POST":
