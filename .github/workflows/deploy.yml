@@ -46,6 +46,7 @@ jobs:
           echo "${{ steps.iam.outputs.IAM_TOKEN }}" | docker login cr.yandex -u iam --password-stdin
 
       - name: Build & Push image
+        working-directory: blog_project
         run: |
           IMAGE="cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
