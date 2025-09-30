@@ -11,9 +11,47 @@ env:
   DEPLOYMENT: mini-blog
 
 jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps (app + test)
+        working-directory: blog_project
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ../requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run tests with coverage
+        working-directory: blog_project
+        run: |
+          pytest -q --maxfail=1 --disable-warnings \
+            --cov=blog --cov=blog_project \
+            --cov-report=xml:../coverage.xml
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v2
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: SonarQube Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          timeout-minutes: 10
+
   build-and-deploy:
     runs-on: ubuntu-latest
-
+    needs: [sonar]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
