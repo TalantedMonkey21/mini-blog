@@ -23,6 +23,11 @@ jobs:
           [ -n "${{ secrets.YC_SA_KEY_JSON_B64 }}" ] || { echo "YC_SA_KEY_JSON_B64 is empty"; exit 1; }
           [ -n "${{ secrets.KUBECONFIG_BASE64 }}" ] || { echo "KUBECONFIG_BASE64 is empty"; exit 1; }
 
+      - name: Save SA key to file
+        run: |
+          printf '%s' "${{ secrets.YC_SA_KEY_JSON }}" > sa-key.json
+          jq -e . sa-key.json >/dev/null 2>&1 || { echo "sa-key.json invalid JSON"; exit 1; }
+
       - name: Install yc CLI
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
@@ -31,7 +36,6 @@ jobs:
       - name: Auth with SA key and get IAM token
         id: iam
         run: |
-          printf '%s' "${{ secrets.YC_SA_KEY_JSON }}" > sa-key.json
           yc config set service-account-key sa-key.json
           IAM_TOKEN=$(yc iam create-token)
           echo "IAM_TOKEN=${IAM_TOKEN}" >> $GITHUB_OUTPUT
