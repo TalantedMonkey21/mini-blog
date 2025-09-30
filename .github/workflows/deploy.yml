@@ -21,7 +21,11 @@ jobs:
       - name: Check secrets presence
         run: |
           [ -n "${{ secrets.YC_SA_KEY_JSON_B64 }}" ] || { echo "❌ YC_SA_KEY_JSON_B64 is empty"; exit 1; }
-          [ -n "${{ secrets.KUBECONFIG_BASE64 }}" ] || { echo "❌ KUBECONFIG_BASE64 is empty"; exit 1; }
+          # эти два нужны только для локального kubectl; при SSH можно не требовать
+          # [ -n "${{ secrets.KUBECONFIG_BASE64 }}" ] || { echo "❌ KUBECONFIG_BASE64 is empty"; exit 1; }
+          [ -n "${{ secrets.VM_HOST }}" ] || { echo "❌ VM_HOST is empty"; exit 1; }
+          [ -n "${{ secrets.VM_USER }}" ] || { echo "❌ VM_USER is empty"; exit 1; }
+          [ -n "${{ secrets.VM_SSH_KEY }}" ] || { echo "❌ VM_SSH_KEY is empty"; exit 1; }
 
       - name: Restore SA key from base64
         run: |
@@ -52,7 +56,7 @@ jobs:
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
-          # (опционально) тег latest:
+          # Опционально: latest
           # docker tag "$IMAGE" "cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:latest"
           # docker push "cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:latest"
 
@@ -64,18 +68,16 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
             set -e
-            IMAGE="cr.yandex/crpagrrnlkadtf6n9au1/mini-blog:${{ github.sha }}"
-            kubectl -n mini-blog set image deploy/mini-blog mini-blog="$IMAGE"
-            kubectl -n mini-blog rollout status deploy/mini-blog
+            # Гарантируем доступ к kubeconfig без sudo
+            if [ ! -r ~/.kube/config ]; then
+              mkdir -p ~/.kube
+              sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+              sudo chown "$USER:$USER" ~/.kube/config
+            fi
 
-      - name: Configure kubectl
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
-          kubectl version --client
-          kubectl cluster-info
+            # Используем тот же тег, что и при пуше
+            IMAGE="${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+            IMAGE="cr.yandex/$IMAGE"
 
-      - name: Set image & rollout
-        run: |
-          kubectl -n "${{ env.NAMESPACE }}" set image deploy/${{ env.DEPLOYMENT }} ${{ env.DEPLOYMENT }}="${IMAGE}"
-          kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}"
+            kubectl -n "${{ env.NAMESPACE }}" set image deploy/${{ env.DEPLOYMENT }} ${{ env.DEPLOYMENT }}="$IMAGE"
+            kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}"
