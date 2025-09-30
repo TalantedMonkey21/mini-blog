@@ -56,6 +56,18 @@ jobs:
           # docker tag "$IMAGE" "cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:latest"
           # docker push "cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:latest"
 
+      - name: Rollout on VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            set -e
+            IMAGE="cr.yandex/crpagrrnlkadtf6n9au1/mini-blog:${{ github.sha }}"
+            kubectl -n mini-blog set image deploy/mini-blog mini-blog="$IMAGE"
+            kubectl -n mini-blog rollout status deploy/mini-blog
+
       - name: Configure kubectl
         run: |
           mkdir -p ~/.kube
