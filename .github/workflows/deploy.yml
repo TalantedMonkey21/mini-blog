@@ -80,4 +80,4 @@ jobs:
             IMAGE="cr.yandex/$IMAGE"
 
             sudo kubectl -n "${{ env.NAMESPACE }}" set image deploy/${{ env.DEPLOYMENT }} ${{ env.DEPLOYMENT }}="$IMAGE"
-            sudo kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}"
+            sudo kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}
