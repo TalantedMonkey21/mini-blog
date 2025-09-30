@@ -79,5 +79,5 @@ jobs:
             IMAGE="${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
             IMAGE="cr.yandex/$IMAGE"
 
-            kubectl -n "${{ env.NAMESPACE }}" set image deploy/${{ env.DEPLOYMENT }} ${{ env.DEPLOYMENT }}="$IMAGE"
-            kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}"
+            sudo kubectl -n "${{ env.NAMESPACE }}" set image deploy/${{ env.DEPLOYMENT }} ${{ env.DEPLOYMENT }}="$IMAGE"
+            sudo kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/${{ env.DEPLOYMENT }}"
