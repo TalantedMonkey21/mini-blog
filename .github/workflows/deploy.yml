@@ -21,13 +21,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install deps (app + test)
-        working-directory: blog_project
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r blog_project/requirements.txt
-          pip install pytest pytest-cov
-
       - name: Run tests with coverage
         working-directory: blog_project
         run: |
