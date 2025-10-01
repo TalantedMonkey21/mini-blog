@@ -33,7 +33,7 @@ jobs:
         run: |
           pytest -q --maxfail=1 --disable-warnings \
             --cov=blog --cov=blog_project \
-            --cov-report=xml:/coverage.xml
+            --cov-report=xml:coverage.xml
             mv coverage.xml ../coverage.xml
 
       - name: SonarQube Scan
